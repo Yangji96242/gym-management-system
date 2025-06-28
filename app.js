@@ -114,11 +114,15 @@ function renderCustomerList(filter = '') {
             <div class="customer-header">
                 <span class="customer-name"><span class="status-indicator ${status}"></span>${c.name}</span>
                 <span class="customer-phone">${c.phone}</span>
+                <span class="customer-renewal ${getRenewalIntentClass(c.renewalIntent)}">续费意向：${c.renewalIntent || '中'}</span>
             </div>
             <div class="customer-details">
                 <span>性别: ${c.gender}</span>
+                <span>项目类型: ${c.projectType}</span>
                 <span>开始: ${c.startDate}</span>
                 <span>结束: ${c.endDate}</span>
+                ${c.notes ? `<span class="customer-notes">备注: ${c.notes}</span>` : ''}
+                ${c.comments ? `<span class="customer-comments">评论: ${c.comments}</span>` : ''}
             </div>
         </div>`;
     });
@@ -132,16 +136,26 @@ function getCustomerStatus(c) {
     return 'status-active';
 }
 
+function getRenewalIntentClass(renewalIntent) {
+    if (!renewalIntent || renewalIntent === '中') return 'medium';
+    if (renewalIntent === '低') return 'low';
+    if (renewalIntent === '高') return 'high';
+    if (renewalIntent === '无意向') return 'none';
+    return 'medium';
+}
+
 // 4. 新增客户
 customerForm.onsubmit = async function(e) {
     e.preventDefault();
     const name = customerForm.name.value.trim();
     const phone = customerForm.phone.value.trim();
     const gender = customerForm.gender.value;
+    const projectType = customerForm.projectType.value;
     const startDate = customerForm.startDate.value;
     const endDate = customerForm.endDate.value;
+    const notes = customerForm.notes.value.trim();
     
-    if (!name || !phone || !gender || !startDate || !endDate) {
+    if (!name || !phone || !gender || !projectType || !startDate || !endDate) {
         alert('请填写所有必填字段');
         return;
     }
@@ -149,7 +163,7 @@ customerForm.onsubmit = async function(e) {
     try {
         await apiRequest('/customers', {
             method: 'POST',
-            body: JSON.stringify({ name, phone, gender, startDate, endDate })
+            body: JSON.stringify({ name, phone, gender, projectType, startDate, endDate, notes, renewalIntent: '中' })
         });
         
         customerForm.reset();
@@ -182,6 +196,7 @@ checkinBtn.onclick = async function() {
         });
         
         checkinCustomerEl.value = '';
+        await loadCustomers();
         await loadTodayCheckins();
         await loadAbsenceReminders();
         alert('打卡成功');
@@ -230,19 +245,54 @@ async function loadExpiryReminders() {
 }
 
 function renderExpiryReminders(reminders) {
-    if (reminders.length === 0) {
+    // 过滤出7天内到期或已过期的客户
+    const relevantReminders = reminders.filter(c => c.days_remaining <= 7);
+    
+    if (relevantReminders.length === 0) {
         expiryReminders.innerHTML = '<div class="empty-state"><i class="fas fa-bell"></i><h3>无到期提醒</h3></div>';
         return;
     }
     
+    // 排序：过期的按过期天数降序，未过期的按剩余天数升序
+    relevantReminders.sort((a, b) => {
+        const aExpired = a.days_remaining <= 0;
+        const bExpired = b.days_remaining <= 0;
+        
+        if (aExpired && bExpired) {
+            // 都过期了，按过期天数降序（过期越久的越靠前）
+            return a.days_remaining - b.days_remaining;
+        } else if (aExpired && !bExpired) {
+            // a过期，b未过期，a放后面（超过3天放最后）
+            return a.days_remaining <= -3 ? 1 : -1;
+        } else if (!aExpired && bExpired) {
+            // a未过期，b过期，b放后面
+            return b.days_remaining <= -3 ? -1 : 1;
+        } else {
+            // 都未过期，按剩余天数升序
+            return a.days_remaining - b.days_remaining;
+        }
+    });
+    
     expiryReminders.innerHTML = '';
-    reminders.forEach(c => {
-        const statusClass = c.days_remaining <= 0 ? 'expired' : 'warning';
+    relevantReminders.forEach(c => {
+        const isExpired = c.days_remaining <= 0;
+        const isOver3Days = c.days_remaining <= -3;
+        let statusClass = 'warning';
+        let daysText = '';
+        
+        if (isExpired) {
+            statusClass = 'expired';
+            daysText = `过期${Math.abs(c.days_remaining)}天`;
+        } else {
+            daysText = `剩余${c.days_remaining}天`;
+        }
+        
         expiryReminders.innerHTML += `
-        <div class="reminder-item ${statusClass}">
+        <div class="reminder-item ${statusClass} ${isOver3Days ? 'overdue' : ''}">
             <span class="reminder-name">${c.name}</span>
             <span class="reminder-phone">${c.phone}</span>
-            <span class="reminder-days">${c.days_remaining <= 0 ? '已过期' : `剩余${c.days_remaining}天`}</span>
+            <span class="reminder-days">${daysText}</span>
+            <span class="customer-renewal ${getRenewalIntentClass(c.renewalIntent)}">续费意向：${c.renewalIntent || '中'}</span>
         </div>`;
     });
 }
@@ -265,11 +315,19 @@ function renderAbsenceReminders(reminders) {
     
     absenceReminders.innerHTML = '';
     reminders.forEach(c => {
+        let daysText = '';
+        if (c.days_absent === -1) {
+            daysText = '从未打卡';
+        } else {
+            daysText = `${c.days_absent}天没来了`;
+        }
+        
         absenceReminders.innerHTML += `
         <div class="reminder-item absence">
             <span class="reminder-name">${c.name}</span>
             <span class="reminder-phone">${c.phone}</span>
-            <span class="reminder-days">${c.last_checkin === '从未打卡' ? '从未打卡' : `缺席${c.days_absent}天`}</span>
+            <span class="reminder-days">${daysText}</span>
+            <span class="last-checkin-tag">${c.last_checkin}</span>
         </div>`;
     });
 }
@@ -284,9 +342,34 @@ searchCustomer.oninput = async function() {
     
     try {
         const results = await apiRequest(`/customers/search?q=${encodeURIComponent(query)}`);
-        renderCustomerList('', results);
+        if (results.length === 0) {
+            customerListEl.innerHTML = '<div class="empty-state"><i class="fas fa-search"></i><h3>未找到匹配的客户</h3></div>';
+            return;
+        }
+        
+        customerListEl.innerHTML = '';
+        results.forEach(c => {
+            const status = getCustomerStatus(c);
+            customerListEl.innerHTML += `
+            <div class="customer-item" data-id="${c._id}">
+                <div class="customer-header">
+                    <span class="customer-name"><span class="status-indicator ${status}"></span>${c.name}</span>
+                    <span class="customer-phone">${c.phone}</span>
+                    <span class="customer-renewal ${getRenewalIntentClass(c.renewalIntent)}">续费意向：${c.renewalIntent || '中'}</span>
+                </div>
+                <div class="customer-details">
+                    <span>性别: ${c.gender}</span>
+                    <span>项目类型: ${c.projectType}</span>
+                    <span>开始: ${c.startDate}</span>
+                    <span>结束: ${c.endDate}</span>
+                    ${c.notes ? `<span class="customer-notes">备注: ${c.notes}</span>` : ''}
+                    ${c.comments ? `<span class="customer-comments">评论: ${c.comments}</span>` : ''}
+                </div>
+            </div>`;
+        });
     } catch (error) {
         console.error('搜索失败:', error);
+        alert('搜索失败: ' + error.message);
     }
 };
 
@@ -306,14 +389,92 @@ customerListEl.onclick = function(e) {
         <div><b>姓名：</b>${c.name}</div>
         <div><b>手机号：</b>${c.phone}</div>
         <div><b>性别：</b>${c.gender}</div>
+        <div><b>项目类型：</b>${c.projectType}</div>
         <div><b>项目开始：</b>${c.startDate}</div>
         <div><b>项目结束：</b>${c.endDate}</div>
+        <div style="margin-top:10px;">
+            <b>备注：</b>
+            <textarea id="customerNotes" rows="2" placeholder="请输入客户备注...">${c.notes || ''}</textarea>
+            <button id="saveNotesBtn" class="btn btn-primary" style="margin-top:5px;">保存备注</button>
+        </div>
+        <div style="margin-top:10px;"><b>续费意向：</b>
+            <select id="renewalIntentSelect">
+                <option value="低" ${c.renewalIntent === '低' ? 'selected' : ''}>低</option>
+                <option value="中" ${!c.renewalIntent || c.renewalIntent === '中' ? 'selected' : ''}>中</option>
+                <option value="高" ${c.renewalIntent === '高' ? 'selected' : ''}>高</option>
+                <option value="无意向" ${c.renewalIntent === '无意向' ? 'selected' : ''}>无意向</option>
+            </select>
+        </div>
+        <div style="margin-top:10px;">
+            <b>状态评论：</b>
+            <textarea id="customerComments" rows="3" placeholder="请输入客户状态评论...">${c.comments || ''}</textarea>
+            <button id="saveCommentsBtn" class="btn btn-primary" style="margin-top:5px;">保存评论</button>
+        </div>
         <div style="margin-top:15px;">
             <button class="btn btn-danger" id="deleteCustomerBtn">删除客户</button>
         </div>
     `;
     customerModal.style.display = 'block';
     deleteCustomerId = cid;
+
+    // 绑定续费意向切换事件
+    const renewalIntentSelect = document.getElementById('renewalIntentSelect');
+    if (renewalIntentSelect) {
+        renewalIntentSelect.onchange = async function() {
+            try {
+                await apiRequest(`/customers/${cid}/renewal-intent`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ renewalIntent: renewalIntentSelect.value })
+                });
+                // 更新本地数据并刷新列表
+                c.renewalIntent = renewalIntentSelect.value;
+                await loadCustomers();
+                alert('续费意向已更新');
+            } catch (error) {
+                alert('续费意向更新失败: ' + error.message);
+            }
+        };
+    }
+
+    // 绑定保存评论事件
+    const saveCommentsBtn = document.getElementById('saveCommentsBtn');
+    if (saveCommentsBtn) {
+        saveCommentsBtn.onclick = async function() {
+            const comments = document.getElementById('customerComments').value.trim();
+            try {
+                await apiRequest(`/customers/${cid}/comments`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ comments })
+                });
+                // 更新本地数据并刷新列表
+                c.comments = comments;
+                await loadCustomers();
+                alert('客户评论已保存');
+            } catch (error) {
+                alert('保存评论失败: ' + error.message);
+            }
+        };
+    }
+
+    // 绑定保存备注事件
+    const saveNotesBtn = document.getElementById('saveNotesBtn');
+    if (saveNotesBtn) {
+        saveNotesBtn.onclick = async function() {
+            const notes = document.getElementById('customerNotes').value.trim();
+            try {
+                await apiRequest(`/customers/${cid}/notes`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ notes })
+                });
+                // 更新本地数据并刷新列表
+                c.notes = notes;
+                await loadCustomers();
+                alert('客户备注已保存');
+            } catch (error) {
+                alert('保存备注失败: ' + error.message);
+            }
+        };
+    }
 };
 
 closeModalBtn.onclick = function() {
@@ -380,9 +541,13 @@ async function init() {
 
 init();
 
-// 定期刷新数据
-setInterval(async () => {
-    await loadTodayCheckins();
-    await loadExpiryReminders();
-    await loadAbsenceReminders();
-}, 60000); 
+// 暂时禁用自动刷新，减少API调用
+// 移除定时器，改为手动刷新或事件驱动刷新
+// 只在页面获得焦点时刷新数据
+// document.addEventListener('visibilitychange', async () => {
+//     if (!document.hidden) {
+//         await loadTodayCheckins();
+//         await loadExpiryReminders();
+//         await loadAbsenceReminders();
+//     }
+// }); 

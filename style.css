@@ -91,32 +91,39 @@ body {
 
 /* 表单样式 */
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .form-group label {
     display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #555;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
 }
 
 .form-group input,
-.form-group select {
+.form-group select,
+.form-group textarea {
     width: 100%;
-    padding: 12px 15px;
-    border: 2px solid #e1e5e9;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    background: white;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
     outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
 /* 按钮样式 */
@@ -500,4 +507,117 @@ body {
         flex-direction: column;
         gap: 5px;
     }
+}
+
+/* 备注字段样式 */
+.customer-notes {
+    color: #666;
+    font-style: italic;
+    font-size: 0.9em;
+    display: block;
+    margin-top: 5px;
+    padding: 5px;
+    background-color: #f8f9fa;
+    border-radius: 3px;
+    border-left: 3px solid #007bff;
+}
+
+/* 续费意向等级颜色区分 */
+.customer-renewal {
+    margin-left: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+.customer-renewal.high {
+    background-color: #28a745;
+    color: white;
+}
+
+.customer-renewal.medium {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.customer-renewal.low {
+    background-color: #dc3545;
+    color: white;
+}
+
+.customer-renewal.none {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* 续费意向选择器样式 */
+#renewalIntentSelect {
+    margin-left: 10px;
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 14px;
+}
+
+#renewalIntentSelect:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* 评论字段样式 */
+.customer-comments {
+    color: #666;
+    font-style: italic;
+    font-size: 0.9em;
+    display: block;
+    margin-top: 5px;
+    padding: 5px;
+    background-color: #fff3cd;
+    border-radius: 3px;
+    border-left: 3px solid #ffc107;
+}
+
+/* 备注文本框样式 */
+#customerNotes {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 60px;
+}
+
+#customerNotes:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+/* 过期提醒样式 */
+.reminder-item.overdue {
+    opacity: 0.7;
+    background-color: #f8d7da;
+    border-left: 4px solid #dc3545;
+}
+
+.reminder-item.expired {
+    background-color: #f8d7da;
+    border-left: 4px solid #dc3545;
+    color: #721c24;
+}
+
+/* 上次打卡时间标签 */
+.last-checkin-tag {
+    background-color: #e9ecef;
+    color: #6c757d;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.8em;
+    margin-left: 10px;
+    font-style: italic;
 } 

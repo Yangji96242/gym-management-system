@@ -43,12 +43,27 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <label for="projectType">项目类型 *</label>
+                            <select id="projectType" name="projectType" required>
+                                <option value="">请选择</option>
+                                <option value="自助健身卡">自助健身卡</option>
+                                <option value="包月私教卡">包月私教卡</option>
+                                <option value="课包私教卡">课包私教卡</option>
+                                <option value="体验课">体验课</option>
+                                <option value="体验卡">体验卡</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="startDate">项目开始日期 *</label>
                             <input type="date" id="startDate" required>
                         </div>
                         <div class="form-group">
                             <label for="endDate">项目结束日期 *</label>
                             <input type="date" id="endDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="notes">备注</label>
+                            <textarea id="notes" name="notes" rows="3" placeholder="请输入备注信息（可选）"></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> 保存客户
