@@ -41,18 +41,48 @@ function scheduleDailyCheckinReset() {
     }, timeUntilReset);
 }
 
-// 启动定时任务
-scheduleDailyCheckinReset();
+// 只在非 Vercel 环境中启动定时任务
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    scheduleDailyCheckinReset();
+}
 
 // 连接MongoDB Atlas
-mongoose.connect(process.env.MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-}).then(() => {
-    console.log('已连接到MongoDB Atlas');
-}).catch(err => {
-    console.error('MongoDB连接失败:', err.message);
-    process.exit(1);
+let mongoConnected = false;
+
+async function connectMongoDB() {
+    try {
+        if (!process.env.MONGODB_URI) {
+            console.error('MONGODB_URI 环境变量未设置');
+            return false;
+        }
+        
+        await mongoose.connect(process.env.MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        
+        console.log('已连接到MongoDB Atlas');
+        mongoConnected = true;
+        return true;
+    } catch (err) {
+        console.error('MongoDB连接失败:', err.message);
+        mongoConnected = false;
+        return false;
+    }
+}
+
+// 初始化 MongoDB 连接
+connectMongoDB();
+
+// 中间件：检查数据库连接
+app.use((req, res, next) => {
+    if (!mongoConnected && mongoose.connection.readyState !== 1) {
+        return res.status(503).json({ 
+            error: '数据库连接失败，请检查 MONGODB_URI 环境变量',
+            details: '请确保在 Vercel 项目设置中正确配置了 MONGODB_URI 环境变量'
+        });
+    }
+    next();
 });
 
 // 获取所有客户
@@ -301,7 +331,8 @@ app.patch('/api/customers/:id/comments', async (req, res) => {
     }
 });
 
-if (process.env.NODE_ENV !== 'production') {
+// 只在非 Vercel 环境中启动服务器
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`服务器运行在端口 ${PORT}`);
     });
