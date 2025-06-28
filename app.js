@@ -1,4 +1,4 @@
-// 轻刻运动 健身房客户管理系统 - SQLite版本
+// 轻刻运动 健身房客户管理系统 - MongoDB版本
 const API_BASE = 'http://localhost:3000/api';
 
 // 工具函数
@@ -91,7 +91,7 @@ async function loadCustomers() {
 function renderCustomerSelect() {
     checkinCustomerEl.innerHTML = '<option value="">请选择客户</option>';
     customers.forEach(c => {
-        checkinCustomerEl.innerHTML += `<option value="${c.id}">${c.name}（${c.phone}）</option>`;
+        checkinCustomerEl.innerHTML += `<option value="${c._id}">${c.name}（${c.phone}）</option>`;
     });
 }
 
@@ -110,15 +110,15 @@ function renderCustomerList(filter = '') {
     list.forEach(c => {
         const status = getCustomerStatus(c);
         customerListEl.innerHTML += `
-        <div class="customer-item" data-id="${c.id}">
+        <div class="customer-item" data-id="${c._id}">
             <div class="customer-header">
                 <span class="customer-name"><span class="status-indicator ${status}"></span>${c.name}</span>
                 <span class="customer-phone">${c.phone}</span>
             </div>
             <div class="customer-details">
                 <span>性别: ${c.gender}</span>
-                <span>开始: ${c.start_date}</span>
-                <span>结束: ${c.end_date}</span>
+                <span>开始: ${c.startDate}</span>
+                <span>结束: ${c.endDate}</span>
             </div>
         </div>`;
     });
@@ -126,8 +126,8 @@ function renderCustomerList(filter = '') {
 
 function getCustomerStatus(c) {
     const now = formatDate(getNowCN());
-    if (c.end_date < now) return 'status-expired';
-    const daysUntilExpiry = Math.ceil((new Date(c.end_date) - new Date(now)) / (1000 * 60 * 60 * 24));
+    if (c.endDate < now) return 'status-expired';
+    const daysUntilExpiry = Math.ceil((new Date(c.endDate) - new Date(now)) / (1000 * 60 * 60 * 24));
     if (daysUntilExpiry <= 7) return 'status-warning';
     return 'status-active';
 }
@@ -198,22 +198,24 @@ async function loadTodayCheckins(search = '') {
         renderTodayCheckins(checkins);
     } catch (error) {
         console.error('加载今日打卡失败:', error);
+        alert('加载今日打卡失败');
     }
 }
 
 function renderTodayCheckins(checkins) {
     if (checkins.length === 0) {
-        todayCheckinsList.innerHTML = '<div class="empty-state"><i class="fas fa-user-clock"></i><h3>今日暂无打卡</h3></div>';
+        todayCheckinsList.innerHTML = '<div class="empty-state"><i class="fas fa-calendar-check"></i><h3>今日暂无打卡</h3></div>';
         return;
     }
     
     todayCheckinsList.innerHTML = '';
-    checkins.forEach(checkin => {
+    checkins.forEach(c => {
         todayCheckinsList.innerHTML += `
-            <div class="checkin-item">
-                ${checkin.name} 
-                <span class="checkin-time">${checkin.checkin_time}</span>
-            </div>`;
+        <div class="checkin-item">
+            <span class="checkin-name">${c.name}</span>
+            <span class="checkin-phone">${c.phone}</span>
+            <span class="checkin-time">${c.checkin_time}</span>
+        </div>`;
     });
 }
 
@@ -229,25 +231,23 @@ async function loadExpiryReminders() {
 
 function renderExpiryReminders(reminders) {
     if (reminders.length === 0) {
-        expiryReminders.innerHTML = '<div class="empty-state"><i class="fas fa-bell-slash"></i><h3>暂无到期提醒</h3></div>';
+        expiryReminders.innerHTML = '<div class="empty-state"><i class="fas fa-bell"></i><h3>无到期提醒</h3></div>';
         return;
     }
     
     expiryReminders.innerHTML = '';
     reminders.forEach(c => {
-        const days = Math.ceil(c.days_remaining);
+        const statusClass = c.days_remaining <= 0 ? 'expired' : 'warning';
         expiryReminders.innerHTML += `
-            <div class="reminder-item">
-                <div class="reminder-info">
-                    <span class="reminder-name">${c.name}</span>
-                    <div class="reminder-detail">${c.end_date} 到期</div>
-                </div>
-                <span class="reminder-days">${days}天</span>
-            </div>`;
+        <div class="reminder-item ${statusClass}">
+            <span class="reminder-name">${c.name}</span>
+            <span class="reminder-phone">${c.phone}</span>
+            <span class="reminder-days">${c.days_remaining <= 0 ? '已过期' : `剩余${c.days_remaining}天`}</span>
+        </div>`;
     });
 }
 
-// 8. 加载缺席提醒（近7天未打卡）
+// 8. 加载缺席提醒
 async function loadAbsenceReminders() {
     try {
         const reminders = await apiRequest('/reminders/absence');
@@ -259,20 +259,18 @@ async function loadAbsenceReminders() {
 
 function renderAbsenceReminders(reminders) {
     if (reminders.length === 0) {
-        absenceReminders.innerHTML = '<div class="empty-state"><i class="fas fa-user-check"></i><h3>暂无缺席提醒</h3></div>';
+        absenceReminders.innerHTML = '<div class="empty-state"><i class="fas fa-user-clock"></i><h3>无缺席提醒</h3></div>';
         return;
     }
     
     absenceReminders.innerHTML = '';
     reminders.forEach(c => {
-        const days = c.days_absent === -1 ? '从未打卡' : `已缺席${Math.ceil(c.days_absent)}天`;
         absenceReminders.innerHTML += `
-            <div class="reminder-item">
-                <div class="reminder-info">
-                    <span class="reminder-name">${c.name}</span>
-                    <div class="reminder-detail">${days}</div>
-                </div>
-            </div>`;
+        <div class="reminder-item absence">
+            <span class="reminder-name">${c.name}</span>
+            <span class="reminder-phone">${c.phone}</span>
+            <span class="reminder-days">${c.last_checkin === '从未打卡' ? '从未打卡' : `缺席${c.days_absent}天`}</span>
+        </div>`;
     });
 }
 
@@ -301,15 +299,15 @@ customerListEl.onclick = function(e) {
     if (!item) return;
     
     const cid = item.getAttribute('data-id');
-    const c = customers.find(x => x.id == cid);
+    const c = customers.find(x => x._id == cid);
     if (!c) return;
     
     customerDetails.innerHTML = `
         <div><b>姓名：</b>${c.name}</div>
         <div><b>手机号：</b>${c.phone}</div>
         <div><b>性别：</b>${c.gender}</div>
-        <div><b>项目开始：</b>${c.start_date}</div>
-        <div><b>项目结束：</b>${c.end_date}</div>
+        <div><b>项目开始：</b>${c.startDate}</div>
+        <div><b>项目结束：</b>${c.endDate}</div>
         <div style="margin-top:15px;">
             <button class="btn btn-danger" id="deleteCustomerBtn">删除客户</button>
         </div>
