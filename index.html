@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>轻刻运动 - 客户管理系统</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部区域 -->
+        <header class="header">
+            <div class="logo">
+                <i class="fas fa-dumbbell"></i>
+                <h1>轻刻运动</h1>
+            </div>
+            <div class="current-time" id="currentTime"></div>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <main class="main-content">
+            <!-- 左侧面板 -->
+            <div class="left-panel">
+                <!-- 客户信息录入 -->
+                <div class="card">
+                    <h2><i class="fas fa-user-plus"></i> 新增客户</h2>
+                    <form id="customerForm">
+                        <div class="form-group">
+                            <label for="name">姓名 *</label>
+                            <input type="text" id="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">手机号 *</label>
+                            <input type="tel" id="phone" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="gender">性别 *</label>
+                            <select id="gender" required>
+                                <option value="">请选择</option>
+                                <option value="男">男</option>
+                                <option value="女">女</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="startDate">项目开始日期 *</label>
+                            <input type="date" id="startDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="endDate">项目结束日期 *</label>
+                            <input type="date" id="endDate" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存客户
+                        </button>
+                    </form>
+                </div>
+
+                <!-- 打卡系统 -->
+                <div class="card">
+                    <h2><i class="fas fa-clock"></i> 今日打卡</h2>
+                    <div class="checkin-section">
+                        <div class="form-group">
+                            <label for="checkinCustomer">选择客户</label>
+                            <select id="checkinCustomer">
+                                <option value="">请选择客户</option>
+                            </select>
+                        </div>
+                        <button id="checkinBtn" class="btn btn-success">
+                            <i class="fas fa-check"></i> 打卡
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" id="searchCheckin" placeholder="搜索今日打卡姓名或手机号...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="today-checkins">
+                        <h3>今日已打卡客户</h3>
+                        <div id="todayCheckinsList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧面板 -->
+            <div class="right-panel">
+                <!-- 提醒区域 -->
+                <div class="reminders">
+                    <!-- 到期提醒 -->
+                    <div class="card warning-card">
+                        <h2><i class="fas fa-exclamation-triangle"></i> 到期提醒</h2>
+                        <div class="reminder-list" id="expiryReminders"></div>
+                    </div>
+
+                    <!-- 缺席提醒 -->
+                    <div class="card danger-card">
+                        <h2><i class="fas fa-user-clock"></i> 缺席提醒</h2>
+                        <div class="reminder-list" id="absenceReminders"></div>
+                    </div>
+                </div>
+
+                <!-- 客户列表 -->
+                <div class="card">
+                    <h2><i class="fas fa-users"></i> 客户列表</h2>
+                    <div class="search-box">
+                        <input type="text" id="searchCustomer" placeholder="搜索客户姓名或手机号...">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <div class="customer-list" id="customerList"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 客户详情模态框 -->
+    <div id="customerModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>客户详情</h2>
+            <div id="customerDetails"></div>
+        </div>
+    </div>
+
+    <!-- 确认删除模态框 -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h2>确认删除</h2>
+            <p>确定要删除这个客户吗？此操作不可撤销。</p>
+            <div class="modal-buttons">
+                <button id="confirmDelete" class="btn btn-danger">确认删除</button>
+                <button id="cancelDelete" class="btn btn-secondary">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html> 
