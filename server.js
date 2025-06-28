@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 require('dotenv').config();
+const path = require('path');
 
 const Customer = require('./models/Customer');
 const Checkin = require('./models/Checkin');
@@ -12,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('.'));
+app.use(express.static('public'));
 
 // 连接MongoDB Atlas
 let mongoConnected = false;
@@ -350,6 +351,11 @@ app.patch('/api/customers/:id/comments', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// 新增：让根路径返回 public/index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 module.exports = app; 
