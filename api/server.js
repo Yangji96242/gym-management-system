@@ -3,17 +3,14 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 require('dotenv').config();
-const path = require('path');
 
-const Customer = require('./models/Customer');
-const Checkin = require('./models/Checkin');
+const Customer = require('../models/Customer');
+const Checkin = require('../models/Checkin');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('public'));
 
 // 连接MongoDB Atlas
 let mongoConnected = false;
@@ -40,46 +37,8 @@ async function connectMongoDB() {
     }
 }
 
-// 定时任务：每天中国时间0点自动刷新今日打卡列表
-function scheduleDailyCheckinReset() {
-    const now = new Date();
-    // 手动计算中国时间（UTC+8）
-    const cnTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-    
-    // 计算下一个0点的时间
-    const nextReset = new Date(cnTime);
-    nextReset.setHours(0, 0, 0, 0);
-    
-    // 如果今天已经过了0点，设置为明天0点
-    if (cnTime >= nextReset) {
-        nextReset.setDate(nextReset.getDate() + 1);
-    }
-    
-    const timeUntilReset = nextReset.getTime() - cnTime.getTime();
-    
-    console.log(`下次刷新今日打卡列表时间: ${nextReset.toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' })}`);
-    
-    setTimeout(() => {
-        console.log('执行每日打卡列表刷新...');
-        // 这里可以添加清空逻辑，比如删除过期的打卡记录
-        // 目前只是日志记录，实际清空可以在需要时添加
-        scheduleDailyCheckinReset(); // 设置下一天的定时任务
-    }, timeUntilReset);
-}
-
-// 只在非 Vercel 环境中启动定时任务和服务器
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-    // 初始化 MongoDB 连接
-    connectMongoDB();
-    scheduleDailyCheckinReset();
-    
-    app.listen(PORT, () => {
-        console.log(`服务器运行在端口 ${PORT}`);
-    });
-} else {
-    // Vercel 环境：延迟连接 MongoDB
-    connectMongoDB();
-}
+// 初始化 MongoDB 连接
+connectMongoDB();
 
 // 中间件：检查数据库连接
 app.use((req, res, next) => {
@@ -351,11 +310,6 @@ app.patch('/api/customers/:id/comments', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-});
-
-// 新增：让根路径返回 public/index.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 module.exports = app; 
