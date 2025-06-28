@@ -14,6 +14,31 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('.'));
 
+// 连接MongoDB Atlas
+let mongoConnected = false;
+
+async function connectMongoDB() {
+    try {
+        if (!process.env.MONGODB_URI) {
+            console.error('MONGODB_URI 环境变量未设置');
+            return false;
+        }
+        
+        await mongoose.connect(process.env.MONGODB_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        
+        console.log('已连接到MongoDB Atlas');
+        mongoConnected = true;
+        return true;
+    } catch (err) {
+        console.error('MongoDB连接失败:', err.message);
+        mongoConnected = false;
+        return false;
+    }
+}
+
 // 定时任务：每天中国时间0点自动刷新今日打卡列表
 function scheduleDailyCheckinReset() {
     const now = new Date();
@@ -41,48 +66,53 @@ function scheduleDailyCheckinReset() {
     }, timeUntilReset);
 }
 
-// 只在非 Vercel 环境中启动定时任务
+// 只在非 Vercel 环境中启动定时任务和服务器
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+    // 初始化 MongoDB 连接
+    connectMongoDB();
     scheduleDailyCheckinReset();
+    
+    app.listen(PORT, () => {
+        console.log(`服务器运行在端口 ${PORT}`);
+    });
+} else {
+    // Vercel 环境：延迟连接 MongoDB
+    connectMongoDB();
 }
-
-// 连接MongoDB Atlas
-let mongoConnected = false;
-
-async function connectMongoDB() {
-    try {
-        if (!process.env.MONGODB_URI) {
-            console.error('MONGODB_URI 环境变量未设置');
-            return false;
-        }
-        
-        await mongoose.connect(process.env.MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        });
-        
-        console.log('已连接到MongoDB Atlas');
-        mongoConnected = true;
-        return true;
-    } catch (err) {
-        console.error('MongoDB连接失败:', err.message);
-        mongoConnected = false;
-        return false;
-    }
-}
-
-// 初始化 MongoDB 连接
-connectMongoDB();
 
 // 中间件：检查数据库连接
 app.use((req, res, next) => {
+    // 健康检查端点不需要数据库连接
+    if (req.path === '/api/health') {
+        return next();
+    }
+    
     if (!mongoConnected && mongoose.connection.readyState !== 1) {
         return res.status(503).json({ 
-            error: '数据库连接失败，请检查 MONGODB_URI 环境变量',
-            details: '请确保在 Vercel 项目设置中正确配置了 MONGODB_URI 环境变量'
+            error: '数据库连接失败',
+            message: '请检查 MONGODB_URI 环境变量是否正确设置',
+            details: '在 Vercel 项目设置中添加 MONGODB_URI 环境变量',
+            database_status: mongoose.connection.readyState,
+            mongo_connected: mongoConnected
         });
     }
     next();
+});
+
+// 健康检查端点（不需要数据库连接）
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        message: '轻刻运动健身房管理系统运行正常',
+        environment: process.env.NODE_ENV || 'development',
+        vercel: !!process.env.VERCEL,
+        database: {
+            status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+            mongo_connected: mongoConnected,
+            ready_state: mongoose.connection.readyState
+        },
+        mongodb_uri_set: !!process.env.MONGODB_URI
+    });
 });
 
 // 获取所有客户
@@ -283,15 +313,6 @@ app.get('/api/customers/search', async (req, res) => {
     }
 });
 
-// 健康检查
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'ok',
-        message: '轻刻运动健身房管理系统运行正常',
-        database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
-    });
-});
-
 // 修改客户续费意向
 app.patch('/api/customers/:id/renewal-intent', async (req, res) => {
     try {
@@ -330,12 +351,5 @@ app.patch('/api/customers/:id/comments', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
-// 只在非 Vercel 环境中启动服务器
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-    app.listen(PORT, () => {
-        console.log(`服务器运行在端口 ${PORT}`);
-    });
-}
 
 module.exports = app; 
