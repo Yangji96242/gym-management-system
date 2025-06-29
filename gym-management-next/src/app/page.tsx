@@ -240,6 +240,18 @@ export default function Home() {
     return new Date(dateString).toLocaleDateString('zh-CN');
   };
 
+  // 格式化日期时间（详细到秒钟）
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
   // 过滤今日打卡记录
   const filteredTodayCheckins = todayCheckins.filter(checkin => 
     checkin.customerName.toLowerCase().includes(checkinSearchTerm.toLowerCase()) ||
@@ -621,7 +633,7 @@ export default function Home() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start pr-8">
                           <div className="flex items-center space-x-2 flex-1 min-w-0">
                             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
                               <span className="text-white font-semibold text-xs">
@@ -771,7 +783,7 @@ export default function Home() {
                                 </div>
                                 <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
                                   <span>📱 {checkin.customerId.phone}</span>
-                                  <span>⏰ {formatDate(checkin.checkinDate)}</span>
+                                  <span>⏰ {formatDateTime(checkin.checkinDate)}</span>
                                 </div>
                               </div>
                             </div>
