@@ -674,6 +674,116 @@ export default function Home() {
 
           {/* 右侧面板 */}
           <div className="space-y-6">
+            {/* 打卡系统 */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                今日打卡
+              </h2>
+              <div className="space-y-4">
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <label htmlFor="checkinCustomer" className="block text-sm font-medium text-gray-700 mb-1">
+                      选择客户
+                    </label>
+                    <select
+                      id="checkinCustomer"
+                      value={selectedCustomerId}
+                      onChange={(e) => setSelectedCustomerId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                      <option value="">请选择客户</option>
+                      {availableForCheckin.map(customer => (
+                        <option key={customer._id} value={customer._id}>
+                          {customer.name} - {customer.phone}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      onClick={handleCheckin}
+                      disabled={checkinLoading}
+                      className="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors flex items-center"
+                    >
+                      {checkinLoading ? (
+                        <>
+                          <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          打卡中...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          打卡
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="searchCheckin"
+                    value={checkinSearchTerm}
+                    onChange={(e) => setCheckinSearchTerm(e.target.value)}
+                    placeholder="搜索今日打卡姓名或手机号..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 pr-10"
+                  />
+                  <svg className="w-4 h-4 text-gray-400 absolute right-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+
+                <div className="today-checkins">
+                  <h3 className="text-lg font-medium text-gray-800 mb-3">今日已打卡客户</h3>
+                  <div id="todayCheckinsList" className="space-y-2 max-h-96 overflow-y-auto">
+                    {filteredTodayCheckins.length === 0 ? (
+                      <div className="text-gray-500 text-center py-6">
+                        <svg className="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-sm">暂无打卡记录</p>
+                      </div>
+                    ) : (
+                      filteredTodayCheckins.map(checkin => (
+                        <div key={checkin._id} className="bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 p-3">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center space-x-2 flex-1 min-w-0">
+                              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-white font-semibold text-xs">
+                                  {checkin.customerName.charAt(0)}
+                                </span>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center space-x-2">
+                                  <h4 className="font-semibold text-gray-900 text-sm truncate">{checkin.customerName}</h4>
+                                  <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                                    ✓ 已打卡
+                                  </span>
+                                </div>
+                                <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
+                                  <span>📱 {checkin.customerId.phone}</span>
+                                  <span>⏰ {formatDate(checkin.checkinDate)}</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* 客户信息录入 */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
@@ -841,116 +951,6 @@ export default function Home() {
                   )}
                 </button>
               </form>
-            </div>
-
-            {/* 打卡系统 */}
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                今日打卡
-              </h2>
-              <div className="space-y-4">
-                <div className="flex space-x-4">
-                  <div className="flex-1">
-                    <label htmlFor="checkinCustomer" className="block text-sm font-medium text-gray-700 mb-1">
-                      选择客户
-                    </label>
-                    <select
-                      id="checkinCustomer"
-                      value={selectedCustomerId}
-                      onChange={(e) => setSelectedCustomerId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                      <option value="">请选择客户</option>
-                      {availableForCheckin.map(customer => (
-                        <option key={customer._id} value={customer._id}>
-                          {customer.name} - {customer.phone}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex items-end">
-                    <button
-                      onClick={handleCheckin}
-                      disabled={checkinLoading}
-                      className="bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 transition-colors flex items-center"
-                    >
-                      {checkinLoading ? (
-                        <>
-                          <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          打卡中...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          打卡
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="relative">
-                  <input
-                    type="text"
-                    id="searchCheckin"
-                    value={checkinSearchTerm}
-                    onChange={(e) => setCheckinSearchTerm(e.target.value)}
-                    placeholder="搜索今日打卡姓名或手机号..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 pr-10"
-                  />
-                  <svg className="w-4 h-4 text-gray-400 absolute right-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-
-                <div className="today-checkins">
-                  <h3 className="text-lg font-medium text-gray-800 mb-3">今日已打卡客户</h3>
-                  <div id="todayCheckinsList" className="space-y-2 max-h-96 overflow-y-auto">
-                    {filteredTodayCheckins.length === 0 ? (
-                      <div className="text-gray-500 text-center py-6">
-                        <svg className="w-10 h-10 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p className="text-sm">暂无打卡记录</p>
-                      </div>
-                    ) : (
-                      filteredTodayCheckins.map(checkin => (
-                        <div key={checkin._id} className="bg-white rounded-lg shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 p-3">
-                          <div className="flex justify-between items-center">
-                            <div className="flex items-center space-x-2 flex-1 min-w-0">
-                              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-                                <span className="text-white font-semibold text-xs">
-                                  {checkin.customerName.charAt(0)}
-                                </span>
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center space-x-2">
-                                  <h4 className="font-semibold text-gray-900 text-sm truncate">{checkin.customerName}</h4>
-                                  <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
-                                    ✓ 已打卡
-                                  </span>
-                                </div>
-                                <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
-                                  <span>📱 {checkin.customerId.phone}</span>
-                                  <span>⏰ {formatDate(checkin.checkinDate)}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </main>
