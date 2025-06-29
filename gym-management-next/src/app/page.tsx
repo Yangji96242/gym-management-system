@@ -63,6 +63,10 @@ export default function Home() {
   const [editCommentMap, setEditCommentMap] = useState<{ [id: string]: string }>({});
   const [commentLoadingMap, setCommentLoadingMap] = useState<{ [id: string]: boolean }>({});
   const [customerSearchTerm, setCustomerSearchTerm] = useState('');
+  const [isPasswordVerified, setIsPasswordVerified] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
   // 计算到期提醒
   const calculateExpiryReminders = (customers: Customer[]): ExpiryReminder[] => {
@@ -250,6 +254,38 @@ export default function Home() {
       minute: '2-digit',
       second: '2-digit'
     });
+  };
+
+  // 手机号脱敏函数
+  const maskPhoneNumber = (phone: string) => {
+    if (!phone || phone.length !== 11) return phone;
+    return phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2');
+  };
+
+  // 处理手机号点击
+  const handlePhoneClick = () => {
+    if (!isPasswordVerified) {
+      setShowPasswordModal(true);
+    }
+  };
+
+  // 验证密码
+  const handlePasswordSubmit = () => {
+    if (passwordInput === '0710') {
+      setIsPasswordVerified(true);
+      setShowPasswordModal(false);
+      setPasswordInput('');
+      setPasswordError('');
+    } else {
+      setPasswordError('密码错误，请重试');
+    }
+  };
+
+  // 关闭密码弹框
+  const handleClosePasswordModal = () => {
+    setShowPasswordModal(false);
+    setPasswordInput('');
+    setPasswordError('');
   };
 
   // 过滤今日打卡记录
@@ -472,7 +508,13 @@ export default function Home() {
                                   </span>
                                 </div>
                                 <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                                  <span>📱 {customer.customer.phone}</span>
+                                  <span 
+                                    className="cursor-pointer hover:text-blue-600 transition-colors"
+                                    onClick={handlePhoneClick}
+                                    title={isPasswordVerified ? "点击查看完整手机号" : "点击输入密码查看完整手机号"}
+                                  >
+                                    📱 {isPasswordVerified ? customer.customer.phone : maskPhoneNumber(customer.customer.phone)}
+                                  </span>
                                   <span>🏃 {customer.customer.projectType}</span>
                                 </div>
                                 <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
@@ -565,7 +607,13 @@ export default function Home() {
                                   </span>
                                 </div>
                                 <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                                  <span>📱 {reminder.customer.phone}</span>
+                                  <span 
+                                    className="cursor-pointer hover:text-blue-600 transition-colors"
+                                    onClick={handlePhoneClick}
+                                    title={isPasswordVerified ? "点击查看完整手机号" : "点击输入密码查看完整手机号"}
+                                  >
+                                    📱 {isPasswordVerified ? reminder.customer.phone : maskPhoneNumber(reminder.customer.phone)}
+                                  </span>
                                   <span>👤 {reminder.customer.gender}</span>
                                   <span>🏃 {reminder.customer.projectType}</span>
                                 </div>
@@ -646,7 +694,13 @@ export default function Home() {
                                 <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${getRenewalIntentStyle(customer.renewalIntent || '中意向')}`}>{customer.renewalIntent || '中意向'}</span>
                               </div>
                               <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                                <span>📱 {customer.phone}</span>
+                                <span 
+                                  className="cursor-pointer hover:text-blue-600 transition-colors"
+                                  onClick={handlePhoneClick}
+                                  title={isPasswordVerified ? "点击查看完整手机号" : "点击输入密码查看完整手机号"}
+                                >
+                                  📱 {isPasswordVerified ? customer.phone : maskPhoneNumber(customer.phone)}
+                                </span>
                                 <span>👤 {customer.gender}</span>
                                 <span>🏃 {customer.projectType}</span>
                               </div>
@@ -709,7 +763,7 @@ export default function Home() {
                       <option value="">请选择客户</option>
                       {availableForCheckin.map(customer => (
                         <option key={customer._id} value={customer._id}>
-                          {customer.name} - {customer.phone}
+                          {customer.name} - {maskPhoneNumber(customer.phone)}
                         </option>
                       ))}
                     </select>
@@ -782,7 +836,13 @@ export default function Home() {
                                   </span>
                                 </div>
                                 <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
-                                  <span>📱 {checkin.customerId.phone}</span>
+                                  <span 
+                                    className="cursor-pointer hover:text-blue-600 transition-colors"
+                                    onClick={handlePhoneClick}
+                                    title={isPasswordVerified ? "点击查看完整手机号" : "点击输入密码查看完整手机号"}
+                                  >
+                                    📱 {isPasswordVerified ? checkin.customerId.phone : maskPhoneNumber(checkin.customerId.phone)}
+                                  </span>
                                   <span>⏰ {formatDateTime(checkin.checkinDate)}</span>
                                 </div>
                               </div>
@@ -967,6 +1027,60 @@ export default function Home() {
           </div>
         </main>
       </div>
+
+      {/* 密码验证弹框 */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-md mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">安全验证</h3>
+              <button
+                onClick={handleClosePasswordModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-4">
+                为了保护客户隐私，查看完整手机号需要输入密码验证。
+              </p>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                请输入密码
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="请输入密码"
+                autoFocus
+              />
+              {passwordError && (
+                <p className="text-red-500 text-sm mt-2">{passwordError}</p>
+              )}
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={handleClosePasswordModal}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={handlePasswordSubmit}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+              >
+                验证
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
