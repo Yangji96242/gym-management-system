@@ -241,6 +241,11 @@ export default function Home() {
     customer.phone.includes(customerSearchTerm)
   );
 
+  // 过滤未打卡的客户（用于打卡选择）
+  const availableForCheckin = customers.filter(customer => 
+    !todayCheckins.some(checkin => checkin.customerId._id === customer._id)
+  );
+
   // 格式化缺席天数显示
   const formatAbsenceDays = (daysAbsent: number, neverCheckedIn: boolean) => {
     if (neverCheckedIn) {
@@ -848,7 +853,7 @@ export default function Home() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
                     >
                       <option value="">请选择客户</option>
-                      {customers.map(customer => (
+                      {availableForCheckin.map(customer => (
                         <option key={customer._id} value={customer._id}>
                           {customer.name} - {customer.phone}
                         </option>
