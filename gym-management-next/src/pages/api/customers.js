@@ -46,23 +46,26 @@ export default async function handler(req, res) {
     case 'POST':
       console.log('➕ Creating new customer...', req.body);
       try {
-        const { name, phone, startDate, endDate, notes } = req.body;
+        const { name, phone, gender, projectType, startDate, endDate, notes, renewalIntent } = req.body;
         
         // 验证必填字段
-        if (!name || !phone || !startDate || !endDate) {
-          console.error('❌ Missing required fields:', { name, phone, startDate, endDate });
+        if (!name || !phone || !gender || !projectType || !startDate || !endDate) {
+          console.error('❌ Missing required fields:', { name, phone, gender, projectType, startDate, endDate });
           return res.status(400).json({ 
             error: '缺少必填字段',
-            details: '请填写姓名、手机号、开始日期和结束日期'
+            details: '请填写姓名、手机号、性别、项目类型、开始日期和结束日期'
           });
         }
         
         const customerData = {
           name,
           phone,
+          gender,
+          projectType,
           startDate: new Date(startDate),
           endDate: new Date(endDate),
-          notes: notes || ''
+          notes: notes || '',
+          renewalIntent: renewalIntent || '中意向'
         };
         
         const customer = new Customer(customerData);
