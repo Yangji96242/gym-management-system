@@ -1,33 +1,47 @@
-import dbConnect from '../../lib/mongodb';
-import mongoose from 'mongoose';
+import { connectDB } from '../../lib/mongodb';
 
 export default async function handler(req, res) {
-  const { method } = req;
-
-  if (method !== 'GET') {
-    res.setHeader('Allow', ['GET']);
-    res.status(405).end(`Method ${method} Not Allowed`);
-    return;
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    await dbConnect();
+    // 检查环境变量
+    const envCheck = {
+      MONGODB_URI: process.env.MONGODB_URI ? '✅ Set' : '❌ Not set',
+      NODE_ENV: process.env.NODE_ENV || '❌ Not set',
+      VERCEL_ENV: process.env.VERCEL_ENV || '❌ Not set'
+    };
+
+    // 尝试连接MongoDB
+    let dbStatus = '❌ Failed';
+    let dbError = null;
     
-    res.status(200).json({
+    try {
+      await connectDB();
+      dbStatus = '✅ Connected';
+    } catch (error) {
+      dbStatus = '❌ Failed';
+      dbError = error.message;
+    }
+
+    const healthStatus = {
       status: 'ok',
-      message: '轻刻运动健身房管理系统运行正常',
-      environment: process.env.NODE_ENV || 'development',
+      timestamp: new Date().toISOString(),
+      environment: envCheck,
       database: {
-        status: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-        ready_state: mongoose.connection.readyState
-      },
-      mongodb_uri_set: !!process.env.MONGODB_URI
-    });
+        status: dbStatus,
+        error: dbError
+      }
+    };
+
+    res.status(200).json(healthStatus);
   } catch (error) {
-    res.status(500).json({
+    console.error('Health check failed:', error);
+    res.status(500).json({ 
       status: 'error',
-      message: '系统检查失败',
-      error: error.message
+      error: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 } 
