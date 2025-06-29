@@ -229,32 +229,6 @@ export default function Home() {
     return new Date(dateString).toLocaleDateString('zh-CN');
   };
 
-  // 格式化剩余天数显示
-  const formatDaysRemaining = (daysRemaining: number, isExpired: boolean) => {
-    if (isExpired) {
-      return `已过期 ${Math.abs(daysRemaining)} 天`;
-    } else if (daysRemaining === 0) {
-      return '今天到期';
-    } else if (daysRemaining === 1) {
-      return '明天到期';
-    } else {
-      return `剩余 ${daysRemaining} 天`;
-    }
-  };
-
-  // 获取提醒样式
-  const getReminderStyle = (daysRemaining: number, isExpired: boolean) => {
-    if (isExpired) {
-      return 'bg-red-100 border-red-300 text-red-800';
-    } else if (daysRemaining <= 1) {
-      return 'bg-red-50 border-red-200 text-red-700';
-    } else if (daysRemaining <= 3) {
-      return 'bg-orange-50 border-orange-200 text-orange-700';
-    } else {
-      return 'bg-yellow-50 border-yellow-200 text-yellow-700';
-    }
-  };
-
   // 过滤今日打卡记录
   const filteredTodayCheckins = todayCheckins.filter(checkin => 
     checkin.customerName.toLowerCase().includes(checkinSearchTerm.toLowerCase()) ||
@@ -281,27 +255,6 @@ export default function Home() {
       return '昨天没来';
     } else {
       return `${daysAbsent}天没来了`;
-    }
-  };
-
-  // 获取缺席提醒样式
-  const getAbsenceReminderStyle = (daysAbsent: number, neverCheckedIn: boolean) => {
-    if (neverCheckedIn) {
-      // 新客户未打卡
-      if (daysAbsent >= 3) {
-        return 'bg-purple-100 border-purple-300 text-purple-800';
-      } else {
-        return 'bg-blue-100 border-blue-300 text-blue-800';
-      }
-    } else {
-      // 老客户缺席
-      if (daysAbsent >= 7) {
-        return 'bg-red-100 border-red-300 text-red-800';
-      } else if (daysAbsent >= 5) {
-        return 'bg-orange-100 border-orange-300 text-orange-800';
-      } else {
-        return 'bg-yellow-100 border-yellow-300 text-yellow-800';
-      }
     }
   };
 
@@ -349,8 +302,7 @@ export default function Home() {
         const errorData = await response.json();
         alert(errorData.error || '打卡失败，请重试');
       }
-    } catch (error) {
-      console.error('打卡失败:', error);
+    } catch {
       alert('网络错误，请重试');
     } finally {
       setCheckinLoading(false);
@@ -375,8 +327,7 @@ export default function Home() {
         const errorData = await response.json();
         alert(errorData.error || '更新失败，请重试');
       }
-    } catch (error) {
-      console.error('更新续费意向失败:', error);
+    } catch {
       alert('网络错误，请重试');
     }
   };
@@ -396,7 +347,7 @@ export default function Home() {
         const errorData = await response.json();
         alert(errorData.error || '删除失败，请重试');
       }
-    } catch (error) {
+    } catch {
       alert('网络错误，删除失败');
     }
   };
@@ -419,7 +370,7 @@ export default function Home() {
         const errorData = await response.json();
         alert(errorData.error || '保存失败，请重试');
       }
-    } catch (error) {
+    } catch {
       alert('网络错误，保存失败');
     }
   };
