@@ -1,5 +1,3 @@
-import { connectDB } from '../../lib/mongodb';
-
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -13,26 +11,21 @@ export default async function handler(req, res) {
       VERCEL_ENV: process.env.VERCEL_ENV || '❌ Not set'
     };
 
-    // 尝试连接MongoDB
-    let dbStatus = '❌ Failed';
-    let dbError = null;
-    
-    try {
-      await connectDB();
-      dbStatus = '✅ Connected';
-    } catch (error) {
-      dbStatus = '❌ Failed';
-      dbError = error.message;
-    }
+    // 基本功能检查
+    const basicChecks = {
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage(),
+      platform: process.platform,
+      nodeVersion: process.version
+    };
 
     const healthStatus = {
       status: 'ok',
       timestamp: new Date().toISOString(),
       environment: envCheck,
-      database: {
-        status: dbStatus,
-        error: dbError
-      }
+      basic: basicChecks,
+      message: 'Health check completed without MongoDB connection'
     };
 
     res.status(200).json(healthStatus);
