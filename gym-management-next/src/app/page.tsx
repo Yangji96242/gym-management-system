@@ -116,6 +116,10 @@ export default function Home() {
         setExpiryReminders(reminders);
         console.log('客户列表更新，到期提醒数量:', reminders.length);
         console.log('到期提醒数据:', reminders);
+      } else {
+        console.error('获取客户列表失败:', response.status, response.statusText);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('错误详情:', errorData);
       }
     } catch (error) {
       console.error('获取客户列表失败:', error);
@@ -133,6 +137,8 @@ export default function Home() {
         console.log('缺席提醒数据:', data);
       } else {
         console.error('获取缺席提醒失败:', response.status, response.statusText);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('错误详情:', errorData);
       }
     } catch (error) {
       console.error('获取缺席提醒失败:', error);
@@ -149,6 +155,10 @@ export default function Home() {
       if (response.ok) {
         const data = await response.json();
         setTodayCheckins(data);
+      } else {
+        console.error('获取今日打卡记录失败:', response.status, response.statusText);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('错误详情:', errorData);
       }
     } catch (error) {
       console.error('获取今日打卡记录失败:', error);
@@ -213,12 +223,13 @@ export default function Home() {
         // 刷新缺席提醒
         await fetchAbsenceReminders();
       } else {
-        const errorData = await response.json();
-        alert(errorData.error || '添加失败，请重试');
+        const errorData = await response.json().catch(() => ({ error: '未知错误' }));
+        console.error('添加客户失败:', response.status, response.statusText, errorData);
+        alert(errorData.error || `添加失败 (${response.status})，请重试`);
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('网络错误，请重试');
+      console.error('添加客户网络错误:', error);
+      alert('网络连接失败，请检查网络连接后重试');
     } finally {
       setLoading(false);
     }
@@ -454,7 +465,7 @@ export default function Home() {
                                 </div>
                                 <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
                                   <span>📅 {formatDate(customer.customer.endDate)}</span>
-                                  {customer.customer.notes && <span className="truncate">💬 {customer.customer.notes}</span>}
+                                  {customer.customer.notes && <span className="truncate">�� {customer.customer.notes}</span>}
                                 </div>
                               </div>
                             </div>

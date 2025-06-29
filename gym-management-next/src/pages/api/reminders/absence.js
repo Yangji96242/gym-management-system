@@ -1,4 +1,4 @@
-import dbConnect from '../../../lib/mongodb';
+import { connectDB } from '../../../lib/mongodb';
 import Checkin from '../../../models/Checkin';
 import Customer from '../../../models/Customer';
 
@@ -11,7 +11,12 @@ export default async function handler(req, res) {
     return;
   }
 
-  await dbConnect();
+  try {
+    await connectDB();
+  } catch (error) {
+    console.error('MongoDB连接失败:', error);
+    return res.status(500).json({ error: '数据库连接失败' });
+  }
 
   try {
     // 使用中国时间获取今天的日期
@@ -103,6 +108,6 @@ export default async function handler(req, res) {
     res.status(200).json(absenceReminders);
   } catch (error) {
     console.error('获取缺席提醒失败:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: '获取缺席提醒失败', details: error.message });
   }
 } 

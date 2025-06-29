@@ -1,9 +1,14 @@
-import dbConnect from '../../lib/mongodb';
+import { connectDB } from '../../lib/mongodb';
 import Checkin from '../../models/Checkin';
 import Customer from '../../models/Customer';
 
 export default async function handler(req, res) {
-  await dbConnect();
+  try {
+    await connectDB();
+  } catch (error) {
+    console.error('MongoDB连接失败:', error);
+    return res.status(500).json({ error: '数据库连接失败' });
+  }
 
   switch (req.method) {
     case 'GET':
@@ -30,13 +35,17 @@ export default async function handler(req, res) {
         res.status(200).json(checkins);
       } catch (error) {
         console.error('获取打卡记录失败:', error);
-        res.status(500).json({ error: '获取打卡记录失败' });
+        res.status(500).json({ error: '获取打卡记录失败', details: error.message });
       }
       break;
 
     case 'POST':
       try {
         const { customerId } = req.body;
+        
+        if (!customerId) {
+          return res.status(400).json({ error: '缺少客户ID' });
+        }
         
         // 检查客户是否存在
         const customer = await Customer.findById(customerId);
@@ -73,7 +82,7 @@ export default async function handler(req, res) {
         res.status(201).json(checkin);
       } catch (error) {
         console.error('打卡失败:', error);
-        res.status(500).json({ error: '打卡失败' });
+        res.status(500).json({ error: '打卡失败', details: error.message });
       }
       break;
 
