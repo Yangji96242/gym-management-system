@@ -465,7 +465,7 @@ export default function Home() {
                                 </div>
                                 <div className="flex items-center space-x-2 text-xs text-gray-500 mt-1">
                                   <span>📅 {formatDate(customer.customer.endDate)}</span>
-                                  {customer.customer.notes && <span className="truncate">�� {customer.customer.notes}</span>}
+                                  {customer.customer.notes && <span className="truncate">📝 {customer.customer.notes}</span>}
                                 </div>
                               </div>
                             </div>
