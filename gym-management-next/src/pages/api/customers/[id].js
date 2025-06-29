@@ -1,6 +1,5 @@
 import dbConnect from '../../../lib/mongodb';
 import Customer from '../../../models/Customer';
-import Checkin from '../../../models/Checkin';
 
 export default async function handler(req, res) {
   const { method } = req;
