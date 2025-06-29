@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const customerSchema = new mongoose.Schema({
     name: {
@@ -50,4 +50,4 @@ const customerSchema = new mongoose.Schema({
 });
 
 // 防止模型重复定义
-module.exports = mongoose.models.Customer || mongoose.model('Customer', customerSchema); 
+export default mongoose.models.Customer || mongoose.model('Customer', customerSchema); 

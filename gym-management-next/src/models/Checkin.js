@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const checkinSchema = new mongoose.Schema({
     customerId: {
@@ -22,4 +22,4 @@ const checkinSchema = new mongoose.Schema({
 checkinSchema.index({ customerId: 1, checkinDate: 1 }, { unique: true });
 
 // 防止模型重复定义
-module.exports = mongoose.models.Checkin || mongoose.model('Checkin', checkinSchema); 
+export default mongoose.models.Checkin || mongoose.model('Checkin', checkinSchema); 
