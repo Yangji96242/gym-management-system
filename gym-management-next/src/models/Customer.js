@@ -23,11 +23,11 @@ const customerSchema = new mongoose.Schema({
         enum: ['自助健身卡', '包月私教卡', '课包私教卡', '体验课', '体验卡']
     },
     startDate: {
-        type: String,
+        type: Date,
         required: true
     },
     endDate: {
-        type: String,
+        type: Date,
         required: true
     },
     notes: {
@@ -37,14 +37,21 @@ const customerSchema = new mongoose.Schema({
     },
     renewalIntent: {
         type: String,
-        enum: ['低', '中', '高', '无意向'],
-        default: '中',
+        enum: ['高意向', '中意向', '低意向', '放弃'],
+        default: '中意向',
     },
     comments: {
         type: String,
         trim: true,
         default: ''
     },
+    lastCheckinDate: {
+        type: Date
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
 }, {
     timestamps: true
 });

@@ -6,13 +6,18 @@ const checkinSchema = new mongoose.Schema({
         ref: 'Customer',
         required: true
     },
-    checkinDate: {
+    customerName: {
         type: String,
         required: true
     },
-    checkinTime: {
-        type: String,
-        required: true
+    checkinDate: {
+        type: Date,
+        required: true,
+        default: Date.now
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
     }
 }, {
     timestamps: true

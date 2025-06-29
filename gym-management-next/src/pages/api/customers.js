@@ -1,36 +1,77 @@
-import dbConnect from '../../lib/mongodb';
+import { connectDB } from '../../lib/mongodb';
 import Customer from '../../models/Customer';
 
 export default async function handler(req, res) {
-  const { method } = req;
+  await connectDB();
 
-  await dbConnect();
-
-  switch (method) {
+  switch (req.method) {
     case 'GET':
       try {
-        const customers = await Customer.find().sort({ createdAt: -1 });
+        const customers = await Customer.find({}).sort({ createdAt: -1 });
         res.status(200).json(customers);
       } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('获取客户列表失败:', error);
+        res.status(500).json({ error: '获取客户列表失败' });
       }
       break;
+
     case 'POST':
       try {
-        const { name, phone, gender, projectType, startDate, endDate, notes, renewalIntent } = req.body;
-        const customer = new Customer({ name, phone, gender, projectType, startDate, endDate, notes, renewalIntent });
+        const customerData = {
+          ...req.body,
+          startDate: new Date(req.body.startDate),
+          endDate: new Date(req.body.endDate)
+        };
+        const customer = new Customer(customerData);
         await customer.save();
-        res.status(200).json({ id: customer._id, message: '客户添加成功' });
+        res.status(201).json(customer);
       } catch (error) {
-        if (error.code === 11000) {
-          res.status(400).json({ error: '该手机号已存在' });
-        } else {
-          res.status(500).json({ error: error.message });
-        }
+        console.error('创建客户失败:', error);
+        res.status(500).json({ error: '创建客户失败' });
       }
       break;
+
+    case 'PUT':
+      try {
+        const { id, ...updateData } = req.body;
+        if (updateData.startDate) updateData.startDate = new Date(updateData.startDate);
+        if (updateData.endDate) updateData.endDate = new Date(updateData.endDate);
+        
+        const customer = await Customer.findByIdAndUpdate(
+          id,
+          updateData,
+          { new: true, runValidators: true }
+        );
+        
+        if (!customer) {
+          return res.status(404).json({ error: '客户不存在' });
+        }
+        
+        res.status(200).json(customer);
+      } catch (error) {
+        console.error('更新客户失败:', error);
+        res.status(500).json({ error: '更新客户失败' });
+      }
+      break;
+
+    case 'DELETE':
+      try {
+        const { id } = req.query;
+        const customer = await Customer.findByIdAndDelete(id);
+        
+        if (!customer) {
+          return res.status(404).json({ error: '客户不存在' });
+        }
+        
+        res.status(200).json({ message: '客户删除成功' });
+      } catch (error) {
+        console.error('删除客户失败:', error);
+        res.status(500).json({ error: '删除客户失败' });
+      }
+      break;
+
     default:
-      res.setHeader('Allow', ['GET', 'POST']);
-      res.status(405).end(`Method ${method} Not Allowed`);
+      res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
+      res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
 } 

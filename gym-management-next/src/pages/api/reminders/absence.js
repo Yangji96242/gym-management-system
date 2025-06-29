@@ -1,6 +1,6 @@
 import dbConnect from '../../../lib/mongodb';
-import Customer from '../../../models/Customer';
 import Checkin from '../../../models/Checkin';
+import Customer from '../../../models/Customer';
 
 export default async function handler(req, res) {
   const { method } = req;
@@ -14,54 +14,95 @@ export default async function handler(req, res) {
   await dbConnect();
 
   try {
-    // 使用中国时间
+    // 使用中国时间获取今天的日期
     const now = new Date();
-    // 手动计算中国时间（UTC+8）
     const cnTime = new Date(now.getTime() + 8 * 60 * 60 * 1000);
-    const today = cnTime.toISOString().split('T')[0];
+    const today = new Date(cnTime);
+    today.setHours(0, 0, 0, 0);
+    
+    // 计算3天前的日期
+    const threeDaysAgo = new Date(today);
+    threeDaysAgo.setDate(today.getDate() - 3);
+    
+    console.log('调试信息:');
+    console.log('当前时间:', now.toISOString());
+    console.log('中国时间:', cnTime.toISOString());
+    console.log('今天日期:', today.toISOString());
+    console.log('3天前日期:', threeDaysAgo.toISOString());
     
     // 获取所有客户
-    const customers = await Customer.find();
-    const absenceCustomers = [];
+    const customers = await Customer.find({});
+    console.log('总客户数:', customers.length);
+    
+    // 获取每个客户最后一次打卡记录
+    const absenceReminders = [];
     
     for (const customer of customers) {
-      // 查找该客户最近3天的打卡记录
-      const threeDaysAgo = new Date(cnTime.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      // 查找该客户最后一次打卡记录
+      const lastCheckin = await Checkin.findOne({ customerId: customer._id })
+        .sort({ checkinDate: -1 })
+        .limit(1);
       
-      const recentCheckins = await Checkin.find({
-        customerId: customer._id,
-        checkinDate: { $gte: threeDaysAgo }
-      }).sort({ checkinDate: -1 });
-      
-      // 如果3天内没有打卡记录，则加入缺席提醒
-      if (recentCheckins.length === 0) {
-        // 查找最后一次打卡记录
-        const lastCheckin = await Checkin.findOne({ customerId: customer._id }).sort({ checkinDate: -1 });
+      if (!lastCheckin) {
+        // 如果从未打卡过，显示在缺席提醒中（无论创建时间多久）
+        const customerCreatedAt = new Date(customer.createdAt);
+        const daysSinceCreation = Math.floor((today.getTime() - customerCreatedAt.getTime()) / (1000 * 60 * 60 * 24));
         
-        let daysAbsent = 0;
-        let lastCheckinText = '从未打卡';
+        console.log(`客户 ${customer.name} 从未打卡，创建时间: ${customerCreatedAt.toISOString()}, 天数: ${daysSinceCreation}`);
         
-        if (lastCheckin) {
-          const lastCheckinDate = new Date(lastCheckin.checkinDate);
-          const todayDate = new Date(today);
-          daysAbsent = Math.ceil((todayDate - lastCheckinDate) / (1000 * 60 * 60 * 24));
-          lastCheckinText = `上次打卡: ${lastCheckin.checkinDate}`;
-        } else {
-          daysAbsent = -1; // 从未打卡
-        }
-        
-        absenceCustomers.push({
-          ...customer.toObject(),
-          last_checkin: lastCheckinText,
-          days_absent: daysAbsent
+        // 移除天数限制，让所有从未打卡的客户都显示
+        absenceReminders.push({
+          customer: {
+            _id: customer._id,
+            name: customer.name,
+            phone: customer.phone,
+            gender: customer.gender,
+            projectType: customer.projectType,
+            startDate: customer.startDate,
+            endDate: customer.endDate,
+            notes: customer.notes,
+            createdAt: customer.createdAt
+          },
+          daysAbsent: 0, // 新客户显示为0天缺席
+          lastCheckinDate: null,
+          neverCheckedIn: true
         });
+      } else {
+        // 计算距离最后一次打卡的天数
+        const lastCheckinDate = new Date(lastCheckin.checkinDate);
+        const daysSinceLastCheckin = Math.floor((today.getTime() - lastCheckinDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        console.log(`客户 ${customer.name} 最后打卡: ${lastCheckinDate.toISOString()}, 天数: ${daysSinceLastCheckin}`);
+        
+        if (daysSinceLastCheckin > 3) {
+          absenceReminders.push({
+            customer: {
+              _id: customer._id,
+              name: customer.name,
+              phone: customer.phone,
+              gender: customer.gender,
+              projectType: customer.projectType,
+              startDate: customer.startDate,
+              endDate: customer.endDate,
+              notes: customer.notes,
+              createdAt: customer.createdAt
+            },
+            daysAbsent: daysSinceLastCheckin,
+            lastCheckinDate: lastCheckinDate,
+            neverCheckedIn: false
+          });
+        }
       }
     }
     
-    // 按缺席天数降序排列
-    absenceCustomers.sort((a, b) => b.days_absent - a.days_absent);
-    res.status(200).json(absenceCustomers);
+    console.log('缺席提醒数量:', absenceReminders.length);
+    
+    // 按缺席天数排序，缺席天数多的排在前面
+    absenceReminders.sort((a, b) => b.daysAbsent - a.daysAbsent);
+    
+    res.status(200).json(absenceReminders);
   } catch (error) {
+    console.error('获取缺席提醒失败:', error);
     res.status(500).json({ error: error.message });
   }
 } 
