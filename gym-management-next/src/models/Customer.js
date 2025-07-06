@@ -1,5 +1,32 @@
 import mongoose from 'mongoose';
 
+const projectSchema = new mongoose.Schema({
+    projectType: {
+        type: String,
+        required: true,
+        enum: ['自助健身卡', '包月私教卡', '课包私教卡', '体验课', '体验卡']
+    },
+    startDate: {
+        type: Date,
+        required: true
+    },
+    endDate: {
+        type: Date,
+        required: true
+    },
+    notes: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    }
+}, {
+    timestamps: true
+});
+
 const customerSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -34,6 +61,10 @@ const customerSchema = new mongoose.Schema({
         type: String,
         trim: true,
         default: ''
+    },
+    projects: {
+        type: [projectSchema],
+        default: []
     },
     renewalIntent: {
         type: String,
