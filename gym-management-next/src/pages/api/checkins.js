@@ -2,6 +2,12 @@ import { connectDB } from '../../lib/mongodb';
 import Checkin from '../../models/Checkin';
 import Customer from '../../models/Customer';
 
+// 获取中国时间的工具函数
+const getChinaTime = () => {
+  const now = new Date();
+  return new Date(now.getTime() + 8 * 60 * 60 * 1000);
+};
+
 export default async function handler(req, res) {
   try {
     await connectDB();
@@ -17,10 +23,9 @@ export default async function handler(req, res) {
         let query = {};
         
         if (date) {
-          const startOfDay = new Date(date);
-          startOfDay.setHours(0, 0, 0, 0);
-          const endOfDay = new Date(date);
-          endOfDay.setHours(23, 59, 59, 999);
+          // 使用中国时间处理日期查询
+          const startOfDay = new Date(date + 'T00:00:00.000+08:00');
+          const endOfDay = new Date(date + 'T23:59:59.999+08:00');
           
           query.checkinDate = {
             $gte: startOfDay,
@@ -53,8 +58,9 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: '客户不存在' });
         }
         
-        // 检查今日是否已打卡
-        const today = new Date();
+        // 使用中国时间获取今天的日期范围
+        const cnTime = getChinaTime();
+        const today = new Date(cnTime);
         today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today);
         tomorrow.setDate(tomorrow.getDate() + 1);
@@ -75,7 +81,7 @@ export default async function handler(req, res) {
         const checkin = new Checkin({
           customerId,
           customerName: customer.name,
-          checkinDate: new Date()
+          checkinDate: cnTime // 使用中国时间
         });
         await checkin.save();
         

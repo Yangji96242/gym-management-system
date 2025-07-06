@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from 'react';
 
+// 获取中国时间的工具函数
+const getChinaTime = () => {
+  const now = new Date();
+  return new Date(now.getTime() + 8 * 60 * 60 * 1000);
+};
+
 interface Customer {
   _id: string;
   name: string;
@@ -24,7 +30,7 @@ interface ExpiryReminder {
 interface AbsenceReminder {
   customer: Customer;
   daysAbsent: number;
-  lastCheckinDate: Date | null;
+  lastCheckinDate: string | null;
   neverCheckedIn: boolean;
 }
 
@@ -70,7 +76,9 @@ export default function Home() {
 
   // 计算到期提醒
   const calculateExpiryReminders = (customers: Customer[]): ExpiryReminder[] => {
-    const today = new Date();
+    // 使用中国时间获取今天的日期
+    const cnTime = getChinaTime();
+    const today = new Date(cnTime);
     today.setHours(0, 0, 0, 0); // 设置时间为当天0点
     
     console.log('计算到期提醒，当前日期:', today.toISOString());
@@ -154,7 +162,9 @@ export default function Home() {
   // 获取今日打卡记录
   const fetchTodayCheckins = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      // 使用中国时间获取今天的日期
+      const cnTime = getChinaTime();
+      const today = cnTime.toISOString().split('T')[0];
       const response = await fetch(`/api/checkins?date=${today}`);
       if (response.ok) {
         const data = await response.json();
@@ -309,7 +319,7 @@ export default function Home() {
   const formatAbsenceDays = (daysAbsent: number, neverCheckedIn: boolean) => {
     if (neverCheckedIn) {
       if (daysAbsent === 0) {
-        return '今天注册未打卡';
+        return '注册后从未打卡';
       } else if (daysAbsent === 1) {
         return '昨天注册未打卡';
       } else {
@@ -483,7 +493,9 @@ export default function Home() {
                     </div>
                   ) : (
                     expiryReminders.map(customer => {
-                      const daysRemaining = Math.ceil((new Date(customer.customer.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                      // 使用中国时间计算剩余天数
+                      const cnTime = getChinaTime();
+                      const daysRemaining = Math.ceil((new Date(customer.customer.endDate).getTime() - cnTime.getTime()) / (1000 * 60 * 60 * 24));
                       const isExpired = daysRemaining < 0;
                       const urgencyColor = isExpired ? 'text-red-600' : daysRemaining <= 3 ? 'text-orange-600' : 'text-yellow-600';
                       const urgencyBg = isExpired ? 'bg-red-50 border-red-200' : daysRemaining <= 3 ? 'bg-orange-50 border-orange-200' : 'bg-yellow-50 border-yellow-200';
@@ -621,7 +633,7 @@ export default function Home() {
                                   <span>
                                     {reminder.neverCheckedIn 
                                       ? `📅 注册时间: ${formatDate(reminder.customer.createdAt)}`
-                                      : `📅 上次打卡: ${formatDate(reminder.lastCheckinDate!.toISOString())}`
+                                      : `📅 上次打卡: ${reminder.lastCheckinDate ? formatDate(reminder.lastCheckinDate) : '无'}`
                                     }
                                   </span>
                                   {reminder.customer.notes && <span className="truncate">💬 {reminder.customer.notes}</span>}

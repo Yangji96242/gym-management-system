@@ -1,6 +1,12 @@
 import { connectDB } from '../../../lib/mongodb';
 import Customer from '../../../models/Customer';
 
+// 获取中国时间的工具函数
+const getChinaTime = () => {
+  const now = new Date();
+  return new Date(now.getTime() + 8 * 60 * 60 * 1000);
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -14,8 +20,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const today = new Date();
-    const sevenDaysLater = new Date();
+    // 使用中国时间获取今天的日期
+    const cnTime = getChinaTime();
+    const today = new Date(cnTime);
+    today.setHours(0, 0, 0, 0);
+    const sevenDaysLater = new Date(today);
     sevenDaysLater.setDate(today.getDate() + 7);
     
     // 获取7天内到期的客户，按剩余天数排序

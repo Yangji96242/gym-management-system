@@ -69,7 +69,7 @@ export default async function handler(req, res) {
             createdAt: customer.createdAt
           },
           daysAbsent: 0, // 新客户显示为0天缺席
-          lastCheckinDate: null,
+          lastCheckinDate: null, // 明确为 null
           neverCheckedIn: true
         });
       } else {
@@ -93,7 +93,7 @@ export default async function handler(req, res) {
               createdAt: customer.createdAt
             },
             daysAbsent: daysSinceLastCheckin,
-            lastCheckinDate: lastCheckinDate,
+            lastCheckinDate: lastCheckinDate ? lastCheckinDate.toISOString() : null, // 统一转字符串
             neverCheckedIn: false
           });
         }
